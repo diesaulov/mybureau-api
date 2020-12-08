@@ -12,7 +12,7 @@ public class TimerDto {
 
     public long id;
     public TimerEntryType type;
-    public ProjectTaskTypeDto taskType;
+    public ProjectTaskDto task;
     public String projectName;
     public long durationInMinutes;
     public boolean isRunning;
@@ -23,7 +23,7 @@ public class TimerDto {
         final var taskType = timerEntry.getTask();
 
         timerDto.id = timerEntry.getId();
-        timerDto.taskType = ProjectTaskTypeDto.from(taskType);
+        timerDto.task = ProjectTaskDto.from(taskType);
         timerDto.projectName = taskType.getProject().getName();
         timerDto.durationInMinutes = timerEntry.calculateDurationInMinutes();
         timerDto.isRunning = timerEntry.isRunning();

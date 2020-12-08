@@ -1,13 +1,13 @@
 package de.bureau.time.api;
 
+import de.bureau.time.api.dto.NewProjectTaskDto;
 import de.bureau.time.api.dto.ProjectDto;
-import de.bureau.time.api.dto.ProjectTaskTypeDto;
+import de.bureau.time.api.dto.ProjectTaskDto;
+import de.bureau.time.service.project.NewProjectTaskRequest;
 import de.bureau.time.service.project.ProjectService;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
+import javax.validation.Valid;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -29,9 +29,20 @@ public class ProjectApi {
     }
 
     @GetMapping("/{projectId}/tasks")
-    public List<ProjectTaskTypeDto> tasks(@PathVariable("projectId") long projectId) {
-        return projectService.taskTypes(projectId).stream()
-                .map(ProjectTaskTypeDto::from)
+    public List<ProjectTaskDto> tasks(@PathVariable("projectId") long projectId) {
+        return projectService.taskList(projectId).stream()
+                .map(ProjectTaskDto::from)
                 .collect(Collectors.toList());
+    }
+
+    @PostMapping("/{projectId}/tasks")
+    public ProjectTaskDto newTask(@PathVariable("projectId") long projectId,
+                                  @RequestBody @Valid NewProjectTaskDto newProjectTaskDto) {
+        final var newTask = projectService.addTask(NewProjectTaskRequest.builder()
+                .name(newProjectTaskDto.name)
+                .description(newProjectTaskDto.description)
+                .projectId(projectId)
+                .build());
+        return ProjectTaskDto.from(newTask);
     }
 }

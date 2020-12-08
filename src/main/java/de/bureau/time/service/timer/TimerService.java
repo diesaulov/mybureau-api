@@ -14,8 +14,8 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static de.bureau.time.service.timer.ListRequest.forToday;
 import static de.bureau.time.utils.DateTimeUtils.nowInUtc;
-import static de.bureau.time.utils.DateTimeUtils.todayInUtc;
 
 @Service
 public class TimerService {
@@ -30,17 +30,17 @@ public class TimerService {
     }
 
     @Transactional
-    public List<TimerEntry> today() {
-        final var today = todayInUtc();
+    public List<TimerEntry> list(ListRequest listRequest) {
+        final var date = listRequest.getDate();
         return Stream.concat(
-                timeEntryRepository.findByDeletedFalseAndTimerStartedIsBetween(today.atStartOfDay(), today.plusDays(1).atStartOfDay()),
-                timeEntryRepository.findByDeletedFalseAndDate(today))
+                timeEntryRepository.findByDeletedFalseAndTimerStartedIsBetween(date.atStartOfDay(), date.plusDays(1).atStartOfDay()),
+                timeEntryRepository.findByDeletedFalseAndDate(date))
                 .collect(Collectors.toUnmodifiableList());
     }
 
     @Transactional
     public TimerEntry startTimer(StartTimerRequest startTimerRequest) {
-        final var taskType = projectService.taskType(startTimerRequest.getTaskTypeId());
+        final var taskType = projectService.task(startTimerRequest.getTaskTypeId());
         final var offset = startTimerRequest.getOffsetInMinutes();
         final var newTimerEntry = new TimerEntry();
         newTimerEntry.setInsertedTs(nowInUtc());
@@ -54,7 +54,7 @@ public class TimerService {
 
     @Transactional
     public TimerEntry manualEntry(ManualEntryRequest manualEntryRequest) {
-        final var taskType = projectService.taskType(manualEntryRequest.getTaskTypeId());
+        final var taskType = projectService.task(manualEntryRequest.getTaskTypeId());
         final var newTimerEntry = new TimerEntry();
         newTimerEntry.setInsertedTs(nowInUtc());
         newTimerEntry.setDate(manualEntryRequest.getDate());
@@ -89,7 +89,7 @@ public class TimerService {
 
     @Transactional
     public void stopRunningTimer() {
-        final var todayTimers = today().stream()
+        final var todayTimers = list(forToday()).stream()
                 .filter(TimerEntry::isRunning)
                 .collect(Collectors.toUnmodifiableList());
 
@@ -108,7 +108,7 @@ public class TimerService {
 
     @Transactional
     public void resumeLastStoppedTimer() {
-        final var todayTimers = today().stream()
+        final var todayTimers = list(forToday()).stream()
                 .filter(TimerEntry::isRunning)
                 .collect(Collectors.toUnmodifiableList());
 
@@ -116,7 +116,7 @@ public class TimerService {
             throw TimerInvalidStateException.hasRunningTimersToday();
         }
 
-        final var lastStoppedFromToday = today().stream()
+        final var lastStoppedFromToday = list(forToday()).stream()
                 .filter(TimerEntry::isStopped)
                 .filter(t -> t.getType() == TimerEntryType.TIMER)
                 .sorted(Comparator.comparing(TimerEntry::getTimerStopped).reversed())

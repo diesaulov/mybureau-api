@@ -1,13 +1,12 @@
 package de.bureau.time.api;
 
-import de.bureau.time.api.dto.ManualTimerDto;
-import de.bureau.time.api.dto.StartTimerDto;
-import de.bureau.time.api.dto.TimerDto;
-import de.bureau.time.api.dto.UpdateTimerDto;
+import de.bureau.time.api.dto.*;
 import de.bureau.time.service.timer.*;
+import de.bureau.time.utils.DateTimeUtils;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
+import java.time.LocalDate;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -23,8 +22,13 @@ public class TimerApi {
     }
 
     @GetMapping
-    public List<TimerDto> list() {
-        return timerService.today().stream()
+    public List<TimerDto> list(@RequestParam(required = false) String date) {
+        final var listReq = ListRequest
+                .builder()
+                .date(date == null ? DateTimeUtils.todayInUtc() : LocalDate.parse(date))
+                .build();
+        return timerService.list(listReq)
+                .stream()
                 .sorted(Comparator.comparing(te -> te.getTimerStarted() == null ? te.getDate().plusDays(1).atStartOfDay().plusSeconds(te.getId())
                         : te.getTimerStarted()))
                 .map(TimerDto::from)

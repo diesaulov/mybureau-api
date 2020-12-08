@@ -32,6 +32,7 @@ create table project_task (
     id bigserial primary key,
 --     code varchar(50) not null,
     name varchar(100) not null,
+    description varchar(200) not null,
     project_id bigint not null references project(id),
     created_ts timestamp not null,
     updated_ts timestamp
@@ -63,8 +64,3 @@ INSERT INTO client (id, name, created_ts, updated_ts) VALUES (2, 'paintgun.io', 
 
 INSERT INTO project (id, name, client_id, created_ts, updated_ts) VALUES (1, 'CPM4', 1, now(), NULL);
 INSERT INTO project (id, name, client_id, created_ts, updated_ts) VALUES (2, 'Paintgun Platform', 2, now(), NULL);
-
-INSERT INTO project_task(id, name, project_id, created_ts, updated_ts) VALUES (1, 'Task', 1, now(), NULL);
-INSERT INTO project_task(id, name, project_id, created_ts, updated_ts) VALUES (2, 'Code Review', 1, now(), NULL);
-INSERT INTO project_task(id, name, project_id, created_ts, updated_ts) VALUES (3, 'Meeting', 1, now(), NULL);
-INSERT INTO project_task(id, name, project_id, created_ts, updated_ts) VALUES (4, 'Documentation', 1, now(), NULL);

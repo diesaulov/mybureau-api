@@ -6,6 +6,7 @@ import de.bureau.time.repository.ProjectRepository;
 import de.bureau.time.repository.ProjectTaskRepository;
 import de.bureau.time.service.project.exception.ProjectNotFoundException;
 import de.bureau.time.service.project.exception.ProjectTaskTypeNotFoundException;
+import de.bureau.time.utils.DateTimeUtils;
 import org.springframework.stereotype.Service;
 
 import javax.transaction.Transactional;
@@ -29,13 +30,23 @@ public class ProjectService {
     }
 
     @Transactional
-    public List<ProjectTask> taskTypes(long projectId) {
+    public List<ProjectTask> taskList(long projectId) {
         final var project = project(projectId);
         return projectTaskRepository.findByProject(project);
     }
 
     @Transactional
-    public ProjectTask taskType(long id) {
+    public ProjectTask addTask(NewProjectTaskRequest newProjectTaskRequest) {
+        final var newProjectTask = new ProjectTask();
+        newProjectTask.setName(newProjectTaskRequest.getName());
+        newProjectTask.setDescription(newProjectTaskRequest.getDescription());
+        newProjectTask.setProject(project(newProjectTaskRequest.getProjectId()));
+        newProjectTask.setCreatedTs(DateTimeUtils.nowInUtc());
+        return projectTaskRepository.save(newProjectTask);
+    }
+
+    @Transactional
+    public ProjectTask task(long id) {
         return projectTaskRepository.findById(id)
                 .orElseThrow(() -> ProjectTaskTypeNotFoundException.forId(id));
     }
