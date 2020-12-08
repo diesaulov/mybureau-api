@@ -1,0 +1,27 @@
+package de.mybureau.time.repository;
+
+import de.mybureau.time.model.TimerEntry;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.Optional;
+import java.util.stream.Stream;
+
+@Repository
+public interface TimeEntryRepository extends JpaRepository<TimerEntry, Long> {
+
+    Stream<TimerEntry> findByDeletedFalseAndTimerStartedIsBetween(LocalDateTime from, LocalDateTime to);
+
+    Stream<TimerEntry> findByDeletedFalseAndDate(LocalDate localDate);
+
+    Optional<TimerEntry> findByIdAndDeletedFalse(long id);
+
+//    @Query("""
+//        SELECT new de.bureau.time.model.ReportEntry(t.task, SUM(t.durationInMinutes))
+//        FROM TimerEntry t
+//        WHERE
+//        """)
+//    List<ReportEntry> findSurveyCount();
+}
