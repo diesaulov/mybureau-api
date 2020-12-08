@@ -3,11 +3,13 @@ package de.mybureau.time.api;
 import de.mybureau.time.api.dto.NewProjectTaskDto;
 import de.mybureau.time.api.dto.ProjectDto;
 import de.mybureau.time.api.dto.ProjectTaskDto;
+import de.mybureau.time.model.ProjectTask;
 import de.mybureau.time.service.project.NewProjectTaskRequest;
 import de.mybureau.time.service.project.ProjectService;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
+import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -31,6 +33,7 @@ public class ProjectApi {
     @GetMapping("/{projectId}/tasks")
     public List<ProjectTaskDto> tasks(@PathVariable("projectId") long projectId) {
         return projectService.taskList(projectId).stream()
+                .sorted(Comparator.comparing(ProjectTask::getName))
                 .map(ProjectTaskDto::from)
                 .collect(Collectors.toList());
     }
