@@ -1,0 +1,19 @@
+version: 0.2
+
+phases:
+  install:
+    runtime-versions:
+      java: openjdk11
+  build:
+    commands:
+      - echo Build started on `date`
+      - ./gradlew bootJar
+  post_build:
+    commands:
+      - echo Build completed on `date`
+artifacts:
+  files:
+    - build/libs/mybureau-api-0.0.1-SNAPSHOT.jar
+    - appspec.yml
+    - scripts/*
+  discard-paths: yes
