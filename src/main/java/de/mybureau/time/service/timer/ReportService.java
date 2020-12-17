@@ -54,10 +54,10 @@ public class ReportService {
                 .collect(Collectors.toUnmodifiableList());
     }
 
-    private List<TimerEntry> entries(LocalDate from, LocalDate to) {
+    private List<TimerEntry> entries(LocalDate fromInclusive, LocalDate toExclusive) {
         return Stream.concat(
-                timeEntryRepository.findByDeletedFalseAndTimerStartedIsBetween(from.atStartOfDay(), to.atStartOfDay()),
-                timeEntryRepository.findByDeletedFalseAndDateIsBetween(from, to))
+                timeEntryRepository.findByDeletedFalseAndTimerStartedIsBetween(fromInclusive.atStartOfDay(), toExclusive.atStartOfDay()),
+                timeEntryRepository.findByDeletedFalseAndDateIsBetween(fromInclusive, toExclusive.minusDays(1)))
                 .collect(Collectors.toUnmodifiableList());
     }
 
