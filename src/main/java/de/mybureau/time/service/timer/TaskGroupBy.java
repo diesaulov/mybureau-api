@@ -1,7 +1,6 @@
 package de.mybureau.time.service.timer;
 
-public enum TimerGroupBy {
-    NONE,
+public enum TaskGroupBy {
     NOTES,
     TASK,
     PROJECT,

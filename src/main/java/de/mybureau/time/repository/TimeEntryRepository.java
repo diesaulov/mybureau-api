@@ -16,12 +16,7 @@ public interface TimeEntryRepository extends JpaRepository<TimerEntry, Long> {
 
     Stream<TimerEntry> findByDeletedFalseAndDate(LocalDate localDate);
 
-    Optional<TimerEntry> findByIdAndDeletedFalse(long id);
+    Stream<TimerEntry> findByDeletedFalseAndDateIsBetween(LocalDate from, LocalDate to);
 
-//    @Query("""
-//        SELECT new de.bureau.time.model.ReportEntry(t.task, SUM(t.durationInMinutes))
-//        FROM TimerEntry t
-//        WHERE
-//        """)
-//    List<ReportEntry> findSurveyCount();
+    Optional<TimerEntry> findByIdAndDeletedFalse(long id);
 }

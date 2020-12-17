@@ -3,6 +3,7 @@ package de.mybureau.time.api.dto;
 import de.mybureau.time.service.timer.ReportEntry;
 
 public class ReportDto {
+    public String label;
     public String projectName;
     public long projectId;
     public String taskName;
@@ -12,6 +13,7 @@ public class ReportDto {
 
     public static ReportDto from(ReportEntry reportEntry) {
         final var dto = new ReportDto();
+        dto.label = reportEntry.getPeriodLabel();
         dto.projectId = reportEntry.getProject().getId();
         dto.projectName = reportEntry.getProject().getName();
         dto.taskId = reportEntry.getTask().getId();
