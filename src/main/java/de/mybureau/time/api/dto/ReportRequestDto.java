@@ -13,4 +13,5 @@ public class ReportRequestDto {
     public PeriodGroupBy periodGroupBy;
     @NotNull
     public TaskGroupBy taskGroupBy;
+    public Long projectId;
 }

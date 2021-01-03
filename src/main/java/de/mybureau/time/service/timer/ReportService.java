@@ -27,22 +27,23 @@ public class ReportService {
         final var from = reportRequest.getFrom();
         final var to = reportRequest.getTo();
         final var result = new ArrayList<ReportEntry>();
+        final var projectId = reportRequest.getProjectId();
 
         if (reportRequest.getPeriodGroupBy() == PeriodGroupBy.DAY) {
             for (LocalDate date = from; date.isBefore(to); date = date.plusDays(1)) {
-                final var entries = entries(date, date.plusDays(1));
+                final var entries = entries(date, date.plusDays(1), projectId);
                 result.addAll(groupByTasks(entries, date.toString(), reportRequest.getTaskGroupBy()));
             }
         } else if (reportRequest.getPeriodGroupBy() == PeriodGroupBy.WEEK) {
             for (LocalDate weekStart = from.with(DayOfWeek.MONDAY); weekStart.isBefore(to); weekStart = weekStart.plusDays(7)) {
-                final var entries = entries(weekStart, weekStart.plusDays(7));
+                final var entries = entries(weekStart, weekStart.plusDays(7), projectId);
                 final var weekNum = weekStart.get(WeekFields.ISO.weekOfYear());
                 final var weekLabel = weekStart.getYear() + "W" + weekNum;
                 result.addAll(groupByTasks(entries, weekLabel, reportRequest.getTaskGroupBy()));
             }
         } else if(reportRequest.getPeriodGroupBy() == PeriodGroupBy.MONTH) {
             for (LocalDate monthStart = from.withDayOfMonth(1); monthStart.isBefore(to); monthStart = monthStart.plusMonths(1)) {
-                final var entries = entries(monthStart, monthStart.plusMonths(1));
+                final var entries = entries(monthStart, monthStart.plusMonths(1), projectId);
                 final var monthLabel = monthStart.getYear() + "-" + monthStart.getMonthValue();
                 result.addAll(groupByTasks(entries, monthLabel, reportRequest.getTaskGroupBy()));
             }
@@ -53,8 +54,15 @@ public class ReportService {
                 .collect(Collectors.toUnmodifiableList());
     }
 
-    private List<TimerEntry> entries(LocalDate fromInclusive, LocalDate toExclusive) {
-        return timerEntryRepository.findByDeletedFalseAndStartedIsBetween(fromInclusive.atStartOfDay(), toExclusive.atStartOfDay());
+    private List<TimerEntry> entries(LocalDate fromInclusive, LocalDate toExclusive, Long projectId) {
+        if (projectId == null) {
+            return timerEntryRepository.findByDeletedFalseAndStartedIsBetween(fromInclusive.atStartOfDay(), toExclusive.atStartOfDay());
+        } else {
+            return timerEntryRepository.findByDeletedFalseAndStartedIsBetween(fromInclusive.atStartOfDay(), toExclusive.atStartOfDay())
+                    .stream()
+                    .filter(t -> t.getTask().getProject().getId() == projectId)
+                    .collect(Collectors.toUnmodifiableList());
+        }
     }
 
     private List<ReportEntry> groupByTasks(List<TimerEntry> entries, String periodLabel, TaskGroupBy taskGroupBy) {

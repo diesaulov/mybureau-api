@@ -10,16 +10,19 @@ public class ReportRequest {
     private final LocalDate to;
     private final PeriodGroupBy periodGroupBy;
     private final TaskGroupBy taskGroupBy;
+    private final Long projectId;
 
     public ReportRequest(LocalDate from,
                          LocalDate to,
                          PeriodGroupBy periodGroupBy,
-                         TaskGroupBy taskGroupBy) {
+                         TaskGroupBy taskGroupBy,
+                         Long projectId) {
         isTrue(to.isAfter(from));
         this.from = notNull(from);
         this.to = notNull(to);
         this.periodGroupBy = notNull(periodGroupBy);
         this.taskGroupBy = notNull(taskGroupBy);
+        this.projectId = projectId;
     }
 
     public LocalDate getFrom() {
@@ -38,6 +41,10 @@ public class ReportRequest {
         return taskGroupBy;
     }
 
+    public Long getProjectId() {
+        return projectId;
+    }
+
     public static ListRequestBuilder builder() {
         return new ListRequestBuilder();
     }
@@ -47,6 +54,7 @@ public class ReportRequest {
         private LocalDate to;
         private PeriodGroupBy periodGroupBy;
         private TaskGroupBy taskGroupBy;
+        private Long projectId;
 
         private ListRequestBuilder() {
         }
@@ -71,8 +79,13 @@ public class ReportRequest {
             return this;
         }
 
+        public ListRequestBuilder projectId(Long projectId) {
+            this.projectId = projectId;
+            return this;
+        }
+
         public ReportRequest build() {
-            return new ReportRequest(from, to, periodGroupBy, taskGroupBy);
+            return new ReportRequest(from, to, periodGroupBy, taskGroupBy, projectId);
         }
     }
 }
