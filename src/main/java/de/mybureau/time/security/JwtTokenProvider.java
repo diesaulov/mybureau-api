@@ -1,5 +1,6 @@
 package de.mybureau.time.security;
 
+import de.mybureau.time.utils.DateTimeHelper;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
 import io.jsonwebtoken.security.SignatureException;
@@ -18,10 +19,13 @@ public class JwtTokenProvider {
     private final String secret;
     private final String issuer;
     private final long ttlInSeconds;
+    private final DateTimeHelper dateTimeHelper;
 
     public JwtTokenProvider(@Value("${security.token.secret}") String secret,
                             @Value("${security.token.issuer}") String issuer,
-                            @Value("${security.token.ttlInSeconds}") long ttlInSeconds) {
+                            @Value("${security.token.ttlInSeconds}") long ttlInSeconds,
+                            DateTimeHelper dateTimeHelper) {
+        this.dateTimeHelper = dateTimeHelper;
         checkArgument(isNotEmpty(secret) && secret.getBytes().length >= 32, "The secret should be at least 32 bytes long");
         checkArgument(isNotEmpty(issuer), "Issuer should be provided");
         checkArgument(ttlInSeconds >= 0, "TTL should be >= 0");
@@ -41,7 +45,7 @@ public class JwtTokenProvider {
                 .signWith(Keys.hmacShaKeyFor(secret.getBytes()), SignatureAlgorithm.HS512)
                 .setIssuer(issuer)
                 .setSubject(username)
-                .setIssuedAt(nowDateInUtc())
+                .setIssuedAt(dateTimeHelper.nowInUtcAsLegacyDate())
                 .setExpiration(fromUtcLocalDateTime(expiresAt))
                 .compact();
     }

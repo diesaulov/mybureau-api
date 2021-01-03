@@ -4,9 +4,10 @@ import de.mybureau.time.model.Project;
 import de.mybureau.time.model.ProjectTask;
 import de.mybureau.time.repository.ProjectRepository;
 import de.mybureau.time.repository.ProjectTaskRepository;
+import de.mybureau.time.service.client.ClientService;
 import de.mybureau.time.service.project.exception.ProjectNotFoundException;
-import de.mybureau.time.service.project.exception.ProjectTaskTypeNotFoundException;
-import de.mybureau.time.utils.DateTimeUtils;
+import de.mybureau.time.service.project.exception.ProjectTaskNotFoundException;
+import de.mybureau.time.utils.DateTimeHelper;
 import org.springframework.stereotype.Service;
 
 import javax.transaction.Transactional;
@@ -15,13 +16,29 @@ import java.util.List;
 @Service
 public class ProjectService {
 
+    private final ClientService clientService;
     private final ProjectRepository projectRepository;
     private final ProjectTaskRepository projectTaskRepository;
+    private final DateTimeHelper dateTimeHelper;
 
-    public ProjectService(ProjectRepository projectRepository,
-                          ProjectTaskRepository projectTaskRepository) {
+    public ProjectService(ClientService clientService,
+                          ProjectRepository projectRepository,
+                          ProjectTaskRepository projectTaskRepository,
+                          DateTimeHelper dateTimeHelper) {
+        this.clientService = clientService;
         this.projectRepository = projectRepository;
         this.projectTaskRepository = projectTaskRepository;
+        this.dateTimeHelper = dateTimeHelper;
+    }
+
+    @Transactional
+    public Project addProject(NewProjectRequest newProjectRequest) {
+        final var client = clientService.findClient(newProjectRequest.getClientId());
+        final var newProject = new Project();
+        newProject.setName(newProjectRequest.getName());
+        newProject.setClient(client);
+        newProject.setCreatedTs(dateTimeHelper.nowInUtc());
+        return projectRepository.save(newProject);
     }
 
     @Transactional
@@ -41,14 +58,14 @@ public class ProjectService {
         newProjectTask.setName(newProjectTaskRequest.getName());
         newProjectTask.setDescription(newProjectTaskRequest.getDescription());
         newProjectTask.setProject(project(newProjectTaskRequest.getProjectId()));
-        newProjectTask.setCreatedTs(DateTimeUtils.nowInUtc());
+        newProjectTask.setCreatedTs(dateTimeHelper.nowInUtc());
         return projectTaskRepository.save(newProjectTask);
     }
 
     @Transactional
-    public ProjectTask task(long id) {
+    public ProjectTask findTask(long id) {
         return projectTaskRepository.findById(id)
-                .orElseThrow(() -> ProjectTaskTypeNotFoundException.forId(id));
+                .orElseThrow(() -> ProjectTaskNotFoundException.forId(id));
     }
 
     @Transactional

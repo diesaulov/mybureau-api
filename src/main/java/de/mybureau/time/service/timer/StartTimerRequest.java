@@ -1,23 +1,25 @@
 package de.mybureau.time.service.timer;
 
+import org.apache.commons.lang3.Validate;
+
 import static org.apache.commons.lang3.Validate.isTrue;
 
 public class StartTimerRequest {
-    private final long taskTypeId;
+    private final long taskId;
     private final String notes;
     private final long offsetInMinutes;
 
-    private StartTimerRequest(long taskTypeId, String notes, long offsetInMinutes) {
-        isTrue(taskTypeId > 0, "Task type ID must be > 0");
+    private StartTimerRequest(long taskId, String notes, long offsetInMinutes) {
+        isTrue(taskId > 0, "Task ID must be > 0");
         isTrue(offsetInMinutes >= 0, "Offset cannot be negative!");
         isTrue(offsetInMinutes <= 120, "Offset is way out of bounds! Max allowed value is 120");
-        this.taskTypeId = taskTypeId;
-        this.notes = notes;
+        this.taskId = taskId;
+        this.notes = Validate.notBlank(notes, "Notes cannot be empty! Be thorough!");
         this.offsetInMinutes = offsetInMinutes;
     }
 
-    public long getTaskTypeId() {
-        return taskTypeId;
+    public long getTaskId() {
+        return taskId;
     }
 
     public String getNotes() {
@@ -33,15 +35,15 @@ public class StartTimerRequest {
     }
 
     public static final class StartTimerRequestBuilder {
-        private long taskTypeId;
+        private long taskId;
         private String notes;
         private long offsetInMinutes;
 
         private StartTimerRequestBuilder() {
         }
 
-        public StartTimerRequestBuilder taskTypeId(long taskTypeId) {
-            this.taskTypeId = taskTypeId;
+        public StartTimerRequestBuilder taskId(long taskId) {
+            this.taskId = taskId;
             return this;
         }
 
@@ -56,7 +58,7 @@ public class StartTimerRequest {
         }
 
         public StartTimerRequest build() {
-            return new StartTimerRequest(taskTypeId, notes, offsetInMinutes);
+            return new StartTimerRequest(taskId, notes, offsetInMinutes);
         }
     }
 }

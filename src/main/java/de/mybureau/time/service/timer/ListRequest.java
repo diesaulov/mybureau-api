@@ -9,7 +9,7 @@ import static org.apache.commons.lang3.Validate.notNull;
 public class ListRequest {
     private final LocalDate date;
 
-    public ListRequest(LocalDate date) {
+    private ListRequest(LocalDate date) {
         this.date = notNull(date);
     }
 
@@ -21,8 +21,8 @@ public class ListRequest {
         return new ListRequestBuilder();
     }
 
-    public static ListRequest forToday() {
-        return new ListRequest(DateTimeUtils.todayInUtc());
+    public static ListRequest forDate(LocalDate date) {
+        return new ListRequest(date);
     }
 
     public static final class ListRequestBuilder {

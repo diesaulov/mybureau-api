@@ -10,19 +10,19 @@ public class ReportEntry {
     private final Project project;
     private final ProjectTask task;
     private final String notes;
-    private long durationInMinutes;
+    private long durationInSeconds;
 
-    private ReportEntry(String periodLabel, Project project, ProjectTask task, String notes, long durationInMinutes) {
+    private ReportEntry(String periodLabel, Project project, ProjectTask task, String notes, long durationInSeconds) {
         this.periodLabel = periodLabel;
         this.project = project;
         this.task = task;
         this.notes = notes;
-        this.durationInMinutes = durationInMinutes;
+        this.durationInSeconds = durationInSeconds;
     }
 
     public static ReportEntry init(String periodLabel, TimerEntry timerEntry) {
         return new ReportEntry(periodLabel, timerEntry.getTask().getProject(),
-                timerEntry.getTask(), timerEntry.getNotes(), timerEntry.calculateDurationInMinutes());
+                timerEntry.getTask(), timerEntry.getNotes(), timerEntry.getDurationInSeconds());
     }
 
     public String getPeriodLabel() {
@@ -41,12 +41,12 @@ public class ReportEntry {
         return notes;
     }
 
-    public long getDurationInMinutes() {
-        return durationInMinutes;
+    public long getDurationInSeconds() {
+        return durationInSeconds;
     }
 
     public ReportEntry accumulate(long durationInMinutes) {
-        this.durationInMinutes += durationInMinutes;
+        this.durationInSeconds += durationInMinutes;
         return this;
     }
 }

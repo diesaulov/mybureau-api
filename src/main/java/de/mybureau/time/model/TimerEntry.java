@@ -1,11 +1,8 @@
 package de.mybureau.time.model;
 
-import de.mybureau.time.utils.DateTimeUtils;
-
+import javax.annotation.Nullable;
 import javax.persistence.*;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.temporal.ChronoUnit;
 
 @Entity
 @Table(name = "timer_entry")
@@ -19,17 +16,11 @@ public class TimerEntry {
     @Column(name = "type")
     private TimerEntryType type;
 
-    @Column(name = "date")
-    private LocalDate date;
+    @Column(name = "duration_sec")
+    private Long durationInSeconds;
 
-    @Column(name = "duration")
-    private int durationInMinutes;
-
-    @Column(name = "timer_started")
-    private LocalDateTime timerStarted;
-
-    @Column(name = "timer_stopped")
-    private LocalDateTime timerStopped;
+    @Column(name = "started")
+    private LocalDateTime started;
 
     @ManyToOne
     @JoinColumn(name = "task_id")
@@ -65,36 +56,20 @@ public class TimerEntry {
         this.type = type;
     }
 
-    public LocalDate getDate() {
-        return date;
+    public Long getDurationInSeconds() {
+        return durationInSeconds;
     }
 
-    public void setDate(LocalDate date) {
-        this.date = date;
+    public void setDurationInSeconds(Long durationInSeconds) {
+        this.durationInSeconds = durationInSeconds;
     }
 
-    public int getDurationInMinutes() {
-        return durationInMinutes;
+    public LocalDateTime getStarted() {
+        return started;
     }
 
-    public void setDurationInMinutes(int durationInMinutes) {
-        this.durationInMinutes = durationInMinutes;
-    }
-
-    public LocalDateTime getTimerStarted() {
-        return timerStarted;
-    }
-
-    public void setTimerStarted(LocalDateTime timerStarted) {
-        this.timerStarted = timerStarted;
-    }
-
-    public LocalDateTime getTimerStopped() {
-        return timerStopped;
-    }
-
-    public void setTimerStopped(LocalDateTime timerStopped) {
-        this.timerStopped = timerStopped;
+    public void setStarted(LocalDateTime timerStarted) {
+        this.started = timerStarted;
     }
 
     public ProjectTask getTask() {
@@ -146,22 +121,15 @@ public class TimerEntry {
     }
 
     public boolean isRunning() {
-        return timerStopped == null && type == TimerEntryType.TIMER;
+        return type == TimerEntryType.TIMER && durationInSeconds == null;
     }
 
     public boolean isStopped() {
         return !isRunning();
     }
 
-    public long calculateDurationInMinutes() {
-        if (getType() == TimerEntryType.TIMER) {
-            if (getTimerStopped() == null) {
-                return getTimerStarted().until(DateTimeUtils.nowInUtc(), ChronoUnit.MINUTES);
-            } else {
-                return getTimerStarted().until(getTimerStopped(), ChronoUnit.MINUTES);
-            }
-        } else {
-            return getDurationInMinutes();
-        }
+    @Nullable
+    public LocalDateTime getStopped() {
+        return isStopped() ? started.plusSeconds(durationInSeconds) : null;
     }
 }

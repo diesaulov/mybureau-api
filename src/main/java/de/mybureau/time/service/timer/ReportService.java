@@ -1,7 +1,7 @@
 package de.mybureau.time.service.timer;
 
 import de.mybureau.time.model.TimerEntry;
-import de.mybureau.time.repository.TimeEntryRepository;
+import de.mybureau.time.repository.TimerEntryRepository;
 import org.springframework.stereotype.Service;
 
 import javax.transaction.Transactional;
@@ -11,15 +11,14 @@ import java.time.temporal.WeekFields;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 @Service
 public class ReportService {
 
-    private final TimeEntryRepository timeEntryRepository;
+    private final TimerEntryRepository timerEntryRepository;
 
-    public ReportService(TimeEntryRepository timeEntryRepository) {
-        this.timeEntryRepository = timeEntryRepository;
+    public ReportService(TimerEntryRepository timerEntryRepository) {
+        this.timerEntryRepository = timerEntryRepository;
     }
 
     @Transactional
@@ -55,10 +54,7 @@ public class ReportService {
     }
 
     private List<TimerEntry> entries(LocalDate fromInclusive, LocalDate toExclusive) {
-        return Stream.concat(
-                timeEntryRepository.findByDeletedFalseAndTimerStartedIsBetween(fromInclusive.atStartOfDay(), toExclusive.atStartOfDay()),
-                timeEntryRepository.findByDeletedFalseAndDateIsBetween(fromInclusive, toExclusive.minusDays(1)))
-                .collect(Collectors.toUnmodifiableList());
+        return timerEntryRepository.findByDeletedFalseAndStartedIsBetween(fromInclusive.atStartOfDay(), toExclusive.atStartOfDay());
     }
 
     private List<ReportEntry> groupByTasks(List<TimerEntry> entries, String periodLabel, TaskGroupBy taskGroupBy) {
@@ -77,7 +73,7 @@ public class ReportService {
         final var mapByNotes = new HashMap<K, ReportEntry>();
         for (TimerEntry timerEntry : entries) {
             final var key = keyExtractor.apply(timerEntry);
-            mapByNotes.computeIfPresent(key, (k, v) -> v.accumulate(timerEntry.calculateDurationInMinutes()));
+            mapByNotes.computeIfPresent(key, (k, v) -> v.accumulate(timerEntry.getDurationInSeconds()));
             mapByNotes.computeIfAbsent(key, k -> ReportEntry.init(periodLabel, timerEntry));
         }
         return List.copyOf(mapByNotes.values());

@@ -19,7 +19,7 @@ public class ReportDto {
         dto.taskId = reportEntry.getTask().getId();
         dto.taskName = reportEntry.getTask().getName();
         dto.notes = reportEntry.getNotes();
-        dto.duration = reportEntry.getDurationInMinutes();
+        dto.duration = reportEntry.getDurationInSeconds() / 60;
         return dto;
     }
 }

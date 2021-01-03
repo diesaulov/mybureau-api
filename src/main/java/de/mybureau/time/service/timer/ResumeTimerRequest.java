@@ -18,6 +18,10 @@ public class ResumeTimerRequest {
         return new StopTimerRequestBuilder();
     }
 
+    public static ResumeTimerRequest forTimerId(long referenceTimerId) {
+        return new ResumeTimerRequest(referenceTimerId);
+    }
+
     public static final class StopTimerRequestBuilder {
         private long referenceTimerId;
 

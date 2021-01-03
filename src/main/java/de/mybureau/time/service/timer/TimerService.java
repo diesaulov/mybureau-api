@@ -2,67 +2,70 @@ package de.mybureau.time.service.timer;
 
 import de.mybureau.time.model.TimerEntry;
 import de.mybureau.time.model.TimerEntryType;
-import de.mybureau.time.repository.TimeEntryRepository;
+import de.mybureau.time.repository.TimerEntryRepository;
 import de.mybureau.time.service.project.ProjectService;
 import de.mybureau.time.service.timer.exception.TimerInvalidStateException;
 import de.mybureau.time.service.timer.exception.TimerNotFoundException;
+import de.mybureau.time.utils.DateTimeHelper;
 import org.springframework.stereotype.Service;
 
 import javax.transaction.Transactional;
+import java.time.temporal.ChronoUnit;
 import java.util.Comparator;
 import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
-import static de.mybureau.time.service.timer.ListRequest.forToday;
-import static de.mybureau.time.utils.DateTimeUtils.nowInUtc;
+import static de.mybureau.time.utils.DateTimeUtils.endOfDay;
+import static de.mybureau.time.utils.DateTimeUtils.startOfDay;
 
 @Service
 public class TimerService {
 
     private final ProjectService projectService;
-    private final TimeEntryRepository timeEntryRepository;
+    private final TimerEntryRepository timerEntryRepository;
+    private final DateTimeHelper dateTimeHelper;
 
     public TimerService(ProjectService projectService,
-                        TimeEntryRepository timeEntryRepository) {
+                        TimerEntryRepository timerEntryRepository, DateTimeHelper dateTimeHelper) {
         this.projectService = projectService;
-        this.timeEntryRepository = timeEntryRepository;
+        this.timerEntryRepository = timerEntryRepository;
+        this.dateTimeHelper = dateTimeHelper;
     }
 
     @Transactional
     public List<TimerEntry> list(ListRequest listRequest) {
         final var date = listRequest.getDate();
-        return Stream.concat(
-                timeEntryRepository.findByDeletedFalseAndTimerStartedIsBetween(date.atStartOfDay(), date.plusDays(1).atStartOfDay()),
-                timeEntryRepository.findByDeletedFalseAndDate(date))
-                .collect(Collectors.toUnmodifiableList());
+        return timerEntryRepository.findByDeletedFalseAndStartedIsBetween(startOfDay(date), endOfDay(date));
     }
 
     @Transactional
     public TimerEntry startTimer(StartTimerRequest startTimerRequest) {
-        final var taskType = projectService.task(startTimerRequest.getTaskTypeId());
+        final var task = projectService.findTask(startTimerRequest.getTaskId());
         final var offset = startTimerRequest.getOffsetInMinutes();
         final var newTimerEntry = new TimerEntry();
-        newTimerEntry.setInsertedTs(nowInUtc());
-        newTimerEntry.setTimerStarted(offset > 0 ? nowInUtc().minusMinutes(offset) : nowInUtc());
-        newTimerEntry.setTask(taskType);
+        final var nowInUtc = dateTimeHelper.nowInUtc();
+
+        newTimerEntry.setInsertedTs(nowInUtc);
+        newTimerEntry.setStarted(offset > 0 ? nowInUtc.minusMinutes(offset) : nowInUtc);
+        newTimerEntry.setTask(task);
         newTimerEntry.setType(TimerEntryType.TIMER);
         newTimerEntry.setNotes(startTimerRequest.getNotes());
 
-        return timeEntryRepository.save(newTimerEntry);
+        return timerEntryRepository.save(newTimerEntry);
     }
 
     @Transactional
     public TimerEntry manualEntry(ManualEntryRequest manualEntryRequest) {
-        final var taskType = projectService.task(manualEntryRequest.getTaskTypeId());
+        final var task = projectService.findTask(manualEntryRequest.getTaskId());
         final var newTimerEntry = new TimerEntry();
-        newTimerEntry.setInsertedTs(nowInUtc());
-        newTimerEntry.setDate(manualEntryRequest.getDate());
-        newTimerEntry.setTask(taskType);
+
+        newTimerEntry.setStarted(manualEntryRequest.getStartedInUtc() == null ? dateTimeHelper.nowInUtc() : manualEntryRequest.getStartedInUtc());
         newTimerEntry.setType(TimerEntryType.MANUAL);
-        newTimerEntry.setDurationInMinutes(manualEntryRequest.getDurationInMinutes());
+        newTimerEntry.setTask(task);
+        newTimerEntry.setDurationInSeconds(manualEntryRequest.getDurationInMinutes() * 60L);
         newTimerEntry.setNotes(manualEntryRequest.getNotes());
-        return timeEntryRepository.save(newTimerEntry);
+        newTimerEntry.setInsertedTs(dateTimeHelper.nowInUtc());
+
+        return timerEntryRepository.save(newTimerEntry);
     }
 
     @Transactional
@@ -74,7 +77,7 @@ public class TimerService {
         }
 
         return startTimer(StartTimerRequest.builder()
-                .taskTypeId(referenceTimer.getTask().getId())
+                .taskId(referenceTimer.getTask().getId())
                 .notes(referenceTimer.getNotes())
                 .build());
     }
@@ -83,63 +86,73 @@ public class TimerService {
     public TimerEntry updateTimer(UpdateTimerRequest updateTimerRequest) {
         final var timer = findTimer(updateTimerRequest.getTimerId());
         timer.setNotes(updateTimerRequest.getNotes());
-        timer.setUpdatedTs(nowInUtc());
+        timer.setUpdatedTs(dateTimeHelper.nowInUtc());
         return timer;
     }
 
     @Transactional
     public void stopRunningTimer() {
-        final var todayTimers = list(forToday()).stream()
-                .filter(TimerEntry::isRunning)
-                .collect(Collectors.toUnmodifiableList());
+        final var todayRunningTimers = todayRunningTimers();
 
-        if (todayTimers.size() == 0) {
+        if (todayRunningTimers.size() == 0) {
             throw TimerInvalidStateException.noTodayRunningTimers();
         }
 
-        if (todayTimers.size() > 1) {
+        if (todayRunningTimers.size() > 1) {
             throw TimerInvalidStateException.multipleRunningTimersDetected();
         }
 
         stopTimer(StopTimerRequest.builder()
-                .timerId(todayTimers.get(0).getId())
+                .timerId(todayRunningTimers.get(0).getId())
                 .build());
+    }
+
+    private List<TimerEntry> todayRunningTimers() {
+        final var todayInUtc = dateTimeHelper.todayInUtc();
+        return timerEntryRepository.findRunningTimers(startOfDay(todayInUtc), endOfDay(todayInUtc));
     }
 
     @Transactional
     public void resumeLastStoppedTimer() {
-        final var todayTimers = list(forToday()).stream()
-                .filter(TimerEntry::isRunning)
-                .collect(Collectors.toUnmodifiableList());
 
-        if (todayTimers.size() > 0) {
+        if (countTodayRunningTimers() > 0) {
             throw TimerInvalidStateException.hasRunningTimersToday();
         }
 
-        final var lastStoppedFromToday = list(forToday()).stream()
-                .filter(TimerEntry::isStopped)
-                .filter(t -> t.getType() == TimerEntryType.TIMER)
-                .sorted(Comparator.comparing(TimerEntry::getTimerStopped).reversed())
-                .findFirst().orElseThrow(TimerInvalidStateException::noStoppedTimersToday);
+        final var lastStoppedFromToday = todayStoppedTimers()
+                .stream().max(Comparator.comparing(TimerEntry::getStopped))
+                .orElseThrow(TimerInvalidStateException::noStoppedTimersToday);
 
         resumeTimer(ResumeTimerRequest.builder()
                 .referenceTimerId(lastStoppedFromToday.getId())
                 .build());
     }
 
+    private int countTodayRunningTimers() {
+        final var todayInUtc = dateTimeHelper.todayInUtc();
+        return timerEntryRepository.countRunningTimers(startOfDay(todayInUtc), endOfDay(todayInUtc));
+    }
+
+    private List<TimerEntry> todayStoppedTimers() {
+        final var todayInUtc = dateTimeHelper.todayInUtc();
+        return timerEntryRepository.findStoppedTimers(startOfDay(todayInUtc), endOfDay(todayInUtc));
+    }
+
     @Transactional
     public void stopTimer(StopTimerRequest stopTimerRequest) {
         final var timeEntry = findTimer(stopTimerRequest.getTimerId());
 
-        if (timeEntry.getTimerStopped() != null) {
+        if (timeEntry.isStopped()) {
             throw TimerInvalidStateException.alreadyStopped(timeEntry.getId());
         }
 
-        timeEntry.setTimerStopped(nowInUtc());
+        timeEntry.setDurationInSeconds(timeEntry.getStarted().until(dateTimeHelper.nowInUtc(), ChronoUnit.SECONDS));
+        timeEntry.setUpdatedTs(dateTimeHelper.nowInUtc());
     }
 
-    private TimerEntry findTimer(long id) {
-        return timeEntryRepository.findByIdAndDeletedFalse(id)
+    @Transactional
+    public TimerEntry findTimer(long id) {
+        return timerEntryRepository.findByIdAndDeletedFalse(id)
                 .orElseThrow(() -> TimerNotFoundException.forId(id));
     }
 
@@ -147,6 +160,6 @@ public class TimerService {
     public void deleteTimer(DeleteTimerRequest deleteTimerRequest) {
         final var timerEntry = findTimer(deleteTimerRequest.getTimerId());
         timerEntry.setDeleted(true);
-        timerEntry.setDeletedTs(nowInUtc());
+        timerEntry.setDeletedTs(dateTimeHelper.nowInUtc());
     }
 }

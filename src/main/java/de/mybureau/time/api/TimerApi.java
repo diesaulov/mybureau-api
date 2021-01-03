@@ -1,6 +1,7 @@
 package de.mybureau.time.api;
 
 import de.mybureau.time.api.dto.*;
+import de.mybureau.time.model.TimerEntry;
 import de.mybureau.time.service.timer.*;
 import de.mybureau.time.utils.DateTimeUtils;
 import org.springframework.web.bind.annotation.*;
@@ -29,8 +30,7 @@ public class TimerApi {
                 .build();
         return timerService.list(listReq)
                 .stream()
-                .sorted(Comparator.comparing(te -> te.getTimerStarted() == null ? te.getDate().plusDays(1).atStartOfDay().plusSeconds(te.getId())
-                        : te.getTimerStarted()))
+                .sorted(Comparator.comparing(TimerEntry::getStarted))
                 .map(TimerDto::from)
                 .collect(Collectors.toList());
     }
@@ -38,7 +38,7 @@ public class TimerApi {
     @PostMapping
     public TimerDto startTimer(@RequestBody StartTimerDto startTimerDto) {
         final var newTimer = timerService.startTimer(StartTimerRequest.builder()
-                .taskTypeId(startTimerDto.taskTypeId)
+                .taskId(startTimerDto.taskTypeId)
                 .notes(startTimerDto.notes)
                 .offsetInMinutes(startTimerDto.offsetInMinutes)
                 .build());
@@ -49,10 +49,10 @@ public class TimerApi {
     @PostMapping("manual")
     public TimerDto manual(@RequestBody ManualTimerDto manualTimerDto) {
         final var newTimer = timerService.manualEntry(ManualEntryRequest.builder()
-                .taskTypeId(manualTimerDto.taskTypeId)
+                .taskId(manualTimerDto.taskTypeId)
                 .durationInMinutes(manualTimerDto.durationInMinutes)
                 .notes(manualTimerDto.notes)
-                .date(manualTimerDto.date)
+                .startedInUtc(null)
                 .build());
 
         return TimerDto.from(newTimer);
