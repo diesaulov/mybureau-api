@@ -25,7 +25,7 @@ public class TimerDto {
         timerDto.id = timerEntry.getId();
         timerDto.task = ProjectTaskDto.from(taskType);
         timerDto.projectName = taskType.getProject().getName();
-        timerDto.durationInMinutes = timerEntry.getDurationInSeconds() / 60;
+        timerDto.durationInMinutes = timerEntry.calculateDurationInSecs() / 60;
         timerDto.isRunning = timerEntry.isRunning();
         timerDto.notes = timerEntry.getNotes();
         timerDto.type = timerEntry.getType();

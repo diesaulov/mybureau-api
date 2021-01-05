@@ -22,7 +22,7 @@ public class ReportEntry {
 
     public static ReportEntry init(String periodLabel, TimerEntry timerEntry) {
         return new ReportEntry(periodLabel, timerEntry.getTask().getProject(),
-                timerEntry.getTask(), timerEntry.getNotes(), timerEntry.getDurationInSeconds());
+                timerEntry.getTask(), timerEntry.getNotes(), timerEntry.calculateDurationInSecs());
     }
 
     public String getPeriodLabel() {

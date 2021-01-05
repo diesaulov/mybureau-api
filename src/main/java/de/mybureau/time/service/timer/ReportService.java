@@ -81,7 +81,7 @@ public class ReportService {
         final var mapByNotes = new HashMap<K, ReportEntry>();
         for (TimerEntry timerEntry : entries) {
             final var key = keyExtractor.apply(timerEntry);
-            mapByNotes.computeIfPresent(key, (k, v) -> v.accumulate(timerEntry.getDurationInSeconds()));
+            mapByNotes.computeIfPresent(key, (k, v) -> v.accumulate(timerEntry.calculateDurationInSecs()));
             mapByNotes.computeIfAbsent(key, k -> ReportEntry.init(periodLabel, timerEntry));
         }
         return List.copyOf(mapByNotes.values());

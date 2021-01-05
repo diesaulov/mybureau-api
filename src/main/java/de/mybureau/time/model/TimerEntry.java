@@ -1,8 +1,11 @@
 package de.mybureau.time.model;
 
+import de.mybureau.time.utils.DateTimeUtils;
+
 import javax.annotation.Nullable;
 import javax.persistence.*;
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 
 @Entity
 @Table(name = "timer_entry")
@@ -126,6 +129,10 @@ public class TimerEntry {
 
     public boolean isStopped() {
         return !isRunning();
+    }
+
+    public long calculateDurationInSecs() {
+        return durationInSeconds != null ? durationInSeconds : getStarted().until(DateTimeUtils.nowInUtc(), ChronoUnit.SECONDS);
     }
 
     @Nullable
